@@ -1,0 +1,7 @@
+This Linux 2.4 module aims to do basically the same thing
+as kexec - lets you load a new kernel from a running one.
+
+To build it you have to point the 'linux' symlink to configured
+sources for your platform and set the right cross-compiling
+environment in the Makefile. 'make reloaded.o' should do the
+rest.
