@@ -19,11 +19,13 @@
 #include <asm/setup.h>
 #include <asm/uaccess.h>
 #include <asm/proc-armv/cache.h>
+#include <asm/arch/irq.h>
+#include <asm/arch/irqs.h>
 
 extern void setup_mm_for_reboot(char mode);
 
 /* module parameters */
-static char *kernel = "zImage";
+static char *kernel = "/mnt/ext2/zImage";
 MODULE_PARM(kernel, "s");
 MODULE_PARM_DESC(kernel, "Kernel image file");
 
@@ -63,8 +65,8 @@ extern unsigned long reloaded_reboot_size;
 extern unsigned long reloaded_reboot_start;
 
 
-/* reserve low 16MB */
-#define MIN_ADDR 0x01000000lu
+/* reserve low 8MB */
+#define MIN_ADDR 0x30800000lu
 
 /* */
 #define SEGMENT_SIZE (32*PAGE_SIZE)
@@ -223,6 +225,7 @@ int init_module()
 
         /* go */
         printk(KERN_INFO "Reloading...\n");
+        disable_irq(IRQ_USBH);
         flush_icache_range((unsigned long)reloaded_reboot_code, (unsigned long)reloaded_reboot_code + reloaded_reboot_size);
         cpu_arm920_proc_fin();
         setup_mm_for_reboot(0);
