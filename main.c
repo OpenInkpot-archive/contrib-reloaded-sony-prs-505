@@ -18,9 +18,10 @@
 
 #include <asm/setup.h>
 #include <asm/uaccess.h>
-#include <asm/proc-armv/cache.h>
+//#include <asm/proc-armv/cache.h>
 #include <asm/arch/irq.h>
 #include <asm/arch/irqs.h>
+#include <asm/hardware.h>
 
 extern void setup_mm_for_reboot(char mode);
 
@@ -226,7 +227,8 @@ int init_module()
         /* go */
         printk(KERN_INFO "Reloading...\n");
         disable_irq(IRQ_USBH);
-        flush_icache_range((unsigned long)reloaded_reboot_code, (unsigned long)reloaded_reboot_code + reloaded_reboot_size);
+        CLKCON &= ~CLKCON_USBH;
+	flush_icache_range((unsigned long)reloaded_reboot_code, (unsigned long)reloaded_reboot_code + reloaded_reboot_size);
         cpu_arm920_proc_fin();
         setup_mm_for_reboot(0);
         reloaded_reboot();
