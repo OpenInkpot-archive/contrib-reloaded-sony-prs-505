@@ -42,7 +42,8 @@ reloaded_do_reboot:
         
         /* copy tag list */
         ldr     r1, reloaded_taglist
-        mov     r2, #0x100
+        mov	r2, #0x30000000
+	add     r2, r2, #0x100
 next_tag:      
         ldr     r0, [r1]
         cmp     r0, #0
@@ -64,7 +65,8 @@ tags_done:
 @        mov     pc, lr
 
         /* copy initrd */
-        mov     r2, #0x800000
+        mov	r2, #0x30000000
+	add     r2, r2, #0x40000
         adr     r3, reloaded_initrd_segments
 copy_initrd_next_segment:
         ldmia   r3!, {r1}          @ r1 = ptr
