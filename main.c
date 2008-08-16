@@ -18,9 +18,9 @@
 
 #include <asm/setup.h>
 #include <asm/uaccess.h>
-//#include <asm/proc-armv/cache.h>
-#include <asm/arch/irq.h>
+#include <asm/arch/S3C2410.h>
 #include <asm/arch/irqs.h>
+#include <asm/arch/irq.h>
 #include <asm/hardware.h>
 
 extern void setup_mm_for_reboot(char mode);
@@ -193,6 +193,8 @@ int init_module()
 
         printk("reloaded for Cybook Gen 3, 2007 tp@fonz.de, 2008 ondra.herman@gmail.com\n");
 
+	write_gpio_bit(GPIO_B8, 1); /* switch off the led */
+
         /* load kernel and initrd */
         old_fs = get_fs();
         set_fs(KERNEL_DS);
@@ -204,10 +206,10 @@ int init_module()
         if (err < 0)
                 return -ENOENT;
 
-        printk("%s: %lld bytes\n", kernel, kernel_size);
+        printk("%s: %ld bytes\n", kernel, kernel_size);
         load_file(kernel, kernel_size, reloaded_kernel_segments);
         if (*initrd) {
-                printk("%s: %lld bytes\n", initrd, initrd_size);
+                printk("%s: %ld bytes\n", initrd, initrd_size);
                 load_file(initrd, initrd_size, reloaded_initrd_segments);
         }
 
@@ -223,6 +225,8 @@ int init_module()
         memcpy(reloaded_reboot_code, reloaded_do_reboot, reloaded_reboot_size);
         reloaded_reboot_start = virt_to_phys(reloaded_reboot_code);
         printk("reloaded_reboot_start  = %lx\n", reloaded_reboot_start);
+	
+	write_gpio_bit(GPIO_B8, 0); /* switch the led on */
 
         /* go */
         printk(KERN_INFO "Reloading...\n");
