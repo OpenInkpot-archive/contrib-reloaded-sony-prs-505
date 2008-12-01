@@ -13,6 +13,6 @@
 #define DEFAULT_KERNEL_PATH 	"/mnt/zImage"
 #define DEFAULT_INITRD_PATH 	""
 #define DEFAULT_CMDLINE		"console=ttySMX1,115200n8 ip=none"
-#define DEFAULT_MACHTYPE	1728
+#define DEFAULT_MACHTYPE	2007
 
 #endif
