@@ -1,6 +1,4 @@
-#define MODULE
 #define LINUX
-#define __KERNEL__
 
 
 #include <linux/module.h>

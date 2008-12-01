@@ -1,16 +1,19 @@
+ifeq ($(IN_KBUILD), y)
+obj-m += reloaded.o
 
-# use the kernel build system
-KERNEL_SOURCE := ./linux/ 
-CROSS_COMPILE=/opt/host/armv4l/bin/armv4l-unknown-linux-
+include $(TOPDIR)/Rules.make
 
-kernel:
-	make -C $(KERNEL_SOURCE) M=`pwd` modules
-
-clean:
-	rm *.o
-
-ARCH=arm
-CC=$(CROSS_COMPILE)gcc
-CFLAGS=-Ilinux/include
 reloaded.o: reboot.o main.o arm-mmu.o proc-arm920.o proc-macros.o
-	$(CROSS_COMPILE)ld -m armelf_linux -r -o reloaded.o reboot.o main.o arm-mmu.o proc-arm920.o proc-macros.o
+	$(CROSS_COMPILE)ld  -mno-fpu -m armelf_linux -r -o reloaded.o reboot.o main.o arm-mmu.o proc-arm920.o proc-macros.o
+
+else
+
+CROSS_COMPILE = arm-softfloat-linux-gnu-
+KERNELSRC = /home/jek/work/src/linux/sony/EBOOK_1_2_0_P4.2_20070426_Linux_src/linux/mvl21/
+
+all:
+	$(MAKE) -C $(KERNELSRC) CROSS_COMPILE=$(CROSS_COMPILE) ARCH=arm SUBDIRS=$(PWD) IN_KBUILD=y modules
+clean:
+	rm -f *.o *.flags
+
+endif

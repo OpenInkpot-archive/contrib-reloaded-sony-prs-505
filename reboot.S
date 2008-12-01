@@ -1,3 +1,5 @@
+#define __ASSEMBLY__
+#include "board.h"
 
         .globl  reloaded_reboot
 reloaded_reboot:
@@ -42,7 +44,7 @@ reloaded_do_reboot:
         
         /* copy tag list */
         ldr     r1, reloaded_taglist
-        mov	r2, #0x30000000
+        mov	r2, #RAM_PHYS_START
 	add     r2, r2, #0x100
 next_tag:      
         ldr     r0, [r1]
@@ -65,7 +67,7 @@ tags_done:
 @        mov     pc, lr
 
         /* copy initrd */
-        mov	r2, #0x30000000
+        mov	r2, #RAM_PHYS_START
 	add     r2, r2, #0x400000
         adr     r3, reloaded_initrd_segments
 copy_initrd_next_segment:
@@ -89,7 +91,7 @@ copy_initrd_done:
         
                                 
         /* copy kernel */
-        mov     r2, #0x30000000
+        mov     r2, #RAM_PHYS_START
 	add	r2, r2, #0x8000
         adr     r3, reloaded_kernel_segments
 copy_kernel_next_segment:
@@ -115,7 +117,7 @@ copy_kernel_done:
         mov     r0, #0
         ldr     r1, reloaded_machtype
         mov     r2, #0x100
-        mov     lr, #0x30000000
+        mov     lr, #RAM_PHYS_START
 	add	lr, lr, #0x8000
         mov     pc, lr
 

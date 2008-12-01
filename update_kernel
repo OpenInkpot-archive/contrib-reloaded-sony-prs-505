@@ -1,2 +1,0 @@
-#!/bin/sh
-insmod /mnt/ext2/reloaded.o initrd=initrd.igz

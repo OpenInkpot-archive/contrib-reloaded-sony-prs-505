@@ -4,9 +4,7 @@
 // original DNS-323 code - tp@fonz.de, 2007
 // Cybook Gen 3 modifications - ondra.herman@gmail.com, 2008
 //
-#define MODULE
 #define LINUX
-#define __KERNEL__
 
 #include <linux/module.h>
 #include <linux/init.h>
@@ -18,27 +16,29 @@
 
 #include <asm/setup.h>
 #include <asm/uaccess.h>
-#include <asm/arch/S3C2410.h>
 #include <asm/arch/irqs.h>
 #include <asm/arch/irq.h>
 #include <asm/hardware.h>
+#include <asm/unistd.h>
+
+#include "board.h"
 
 extern void setup_mm_for_reboot(char mode);
 
 /* module parameters */
-static char *kernel = "/mnt/ext2/zImage";
+static char *kernel = DEFAULT_KERNEL_PATH;
 MODULE_PARM(kernel, "s");
 MODULE_PARM_DESC(kernel, "Kernel image file");
 
-static char *initrd = "";
+static char *initrd = DEFAULT_INITRD_PATH;
 MODULE_PARM(initrd, "s");
 MODULE_PARM_DESC(initrd, "initrd file");
 
-static char *cmdline = "root=/dev/ram console=ttySAC0 loglevel=8";
+static char *cmdline = DEFAULT_CMDLINE;
 MODULE_PARM(cmdline, "s");
 MODULE_PARM_DESC(cmdline, "Kernel command line");
 
-static int machtype = 193;
+static int machtype = DEFAULT_MACHTYPE;
 MODULE_PARM(machtype, "i");
 MODULE_PARM_DESC(machtype, "Machine type (see linux/arch/arm/tools/mach-types)");
 
@@ -65,21 +65,23 @@ extern unsigned char reloaded_do_reboot[];
 extern unsigned long reloaded_reboot_size;
 extern unsigned long reloaded_reboot_start;
 
+extern long sys_read(int, char *, int);
 
-/* reserve low 8MB */
-#define MIN_ADDR 0x30800000lu
+
+/* describes where the compressed ramdisk image lives (physical address) */
+#define ATAG_INITRD2    0x54420005
 
 /* */
-#define SEGMENT_SIZE (32*PAGE_SIZE)
+#define MY_SEGMENT_SIZE (32*PAGE_SIZE)
 #define MIN_SEGMENT_SIZE PAGE_SIZE
-static unsigned int segment_size = SEGMENT_SIZE;
+static unsigned int segment_size = MY_SEGMENT_SIZE;
 
 static long get_size(char *filename, unsigned long *size)
 {
 	struct nameidata nd;
 	int error;
 
-	if(error = user_path_walk(filename, &nd))
+	if((error = user_path_walk(filename, &nd)))
 		return error;
 
 	*size = nd.dentry->d_inode->i_size;
@@ -132,14 +134,11 @@ static void load_file(char *filename, int count, unsigned long *segments)
         set_fs(old_fs);
 }
 
-
 static void *make_taglist(int initrd_size) 
 {
         void *taglist;
         struct tag *t;
         int i;
-        unsigned long mem_start = 0x30000000;
-        unsigned long mem_size = 0x01000000; //(unsigned long)__virt_to_phys(high_memory);
 
         if (!(t = taglist = kmalloc(MIN_SEGMENT_SIZE, GFP_KERNEL)))
                 panic("make_taglist: Out of memory\n");
@@ -157,12 +156,12 @@ static void *make_taglist(int initrd_size)
         t->hdr.tag = ATAG_CMDLINE;
         strcpy(t->u.cmdline.cmdline, cmdline);
 
-        printk("MEM: start %08lx size %luMB\n", mem_start, mem_size >> 20);
+        printk("MEM: start %08lx size %luMB\n", (unsigned long)RAM_PHYS_START, (unsigned long)(RAM_SIZE >> 20));
         t = tag_next(t);
         t->hdr.size = tag_size(tag_mem32);
         t->hdr.tag = ATAG_MEM;
-        t->u.mem.size = mem_size;
-        t->u.mem.start = mem_start;
+        t->u.mem.size = RAM_SIZE;
+        t->u.mem.start = RAM_PHYS_START;
 
         if (initrd_size > 0) {
                 printk("INITRD: start %08lx size %d\n", 0x30400000lu, initrd_size);
@@ -191,18 +190,20 @@ int init_module()
         unsigned long initrd_size;
         void *reloaded_reboot_code;
 
-        printk("reloaded for Cybook Gen 3, 2007 tp@fonz.de, 2008 ondra.herman@gmail.com\n");
-
-	write_gpio_bit(GPIO_B8, 1); /* switch off the led */
+        printk("reloaded for Sony PRS-505, 2007 tp@fonz.de, 2008 ondra.herman@gmail.com, 2008 Yauhen Kharuzhy <jekhor@gmail.com>\n");
 
         /* load kernel and initrd */
         old_fs = get_fs();
+	printk("1\n");
         set_fs(KERNEL_DS);
+	printk("2\n");
         if ((err = get_size(kernel, &kernel_size)) < 0) 
                 printk("%s: stat failed (%d)\n", kernel, err);
         else if (*initrd && (err = get_size(initrd, &initrd_size)) < 0)
                 printk("%s: stat failed (%d)\n", initrd, err);
+	printk("3\n");
         set_fs(old_fs);
+	printk("4\n");
         if (err < 0)
                 return -ENOENT;
 
@@ -226,13 +227,9 @@ int init_module()
         reloaded_reboot_start = virt_to_phys(reloaded_reboot_code);
         printk("reloaded_reboot_start  = %lx\n", reloaded_reboot_start);
 	
-	write_gpio_bit(GPIO_B8, 0); /* switch the led on */
-
         /* go */
         printk(KERN_INFO "Reloading...\n");
-        disable_irq(IRQ_USBH);
-        CLKCON &= ~CLKCON_USBH;
-	flush_icache_range((unsigned long)reloaded_reboot_code, (unsigned long)reloaded_reboot_code + reloaded_reboot_size);
+	cpu_arm920_icache_invalidate_range((unsigned long)reloaded_reboot_code, (unsigned long)reloaded_reboot_code + reloaded_reboot_size);
         cpu_arm920_proc_fin();
         setup_mm_for_reboot(0);
         reloaded_reboot();
