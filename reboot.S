@@ -68,7 +68,7 @@ tags_done:
 
         /* copy initrd */
         mov	r2, #RAM_PHYS_START
-	add     r2, r2, #0x400000
+	add     r2, r2, #0x800000
         adr     r3, reloaded_initrd_segments
 copy_initrd_next_segment:
         ldmia   r3!, {r1}          @ r1 = ptr
